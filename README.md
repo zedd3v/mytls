@@ -11,14 +11,14 @@ $ npm install mytls
 ## Usage
 
 ```javascript
-const initMyTls = require('initMyTls');
+const initMyTls = require('mytls');
 
 // Typescript: import initMyTls from 'mytls';
 
 (async () => {
   const myTls = await initMyTls();
 
-  const res2 = await myTls('https://ja3er.com/json', {
+  const response = await myTls('https://ja3er.com/json', {
     body: '',
     headers: {
       'user-agent': 'customheaders',
