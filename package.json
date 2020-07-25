@@ -1,0 +1,40 @@
+{
+	"name": "mytls",
+	"version": "1.0.0",
+	"description": "Mimic TLS/JA3 fingerprint inside Node with help from Go",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"author": "zeddev",
+	"scripts": {
+		"build": "tsc && go build -o ./dist ./golang/index.go",
+		"prepare": "npm run build"
+	},
+	"repository": {
+		"type": "git",
+		"directory": "git+https://github.com/zedd3v/mytls.git"
+	},
+	"keywords": [
+		"mytls",
+		"utls",
+		"ja3",
+		"spoof",
+		"fingerprint",
+		"mimic"
+	],
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/zedd3v/mytls/issues"
+	},
+	"homepage": "https://github.com/zedd3v/mytls#readme",
+	"dependencies": {
+		"ws": "^7.3.1"
+	},
+	"devDependencies": {
+		"@types/ws": "^7.2.6",
+		"@typescript-eslint/eslint-plugin": "^3.6.1",
+		"@typescript-eslint/parser": "^3.6.1",
+		"eslint": "^7.4.0",
+		"eslint-plugin-prefer-arrow": "^1.2.1",
+		"typescript": "^3.9.7"
+	}
+}
