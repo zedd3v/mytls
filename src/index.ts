@@ -31,7 +31,7 @@ process.on('SIGTERM', () => cleanExit());
 
 class Golang extends EventEmitter {
   server: Server;
-  constructor(port: number) {
+  constructor(port: number, debug: boolean) {
     super();
 
     child = spawn(path.join(__dirname, 'index.exe'), {
@@ -41,13 +41,17 @@ class Golang extends EventEmitter {
     });
 
     child.stderr.on('data', (stderr) => {
-      if (!stderr.toString().includes('REQUESTIDONTHELEFT')) {
-        cleanExit(new Error('Invalid JA3 hash. Exiting... (Golang wrapper exception)'));
+      if (stderr.toString().includes('Request_Id_On_The_Left')) {
+        const splitRequestIdAndError = stderr.toString().split('Request_Id_On_The_Left');
+        const [requestId, error] = splitRequestIdAndError;
+        debug
+          ? cleanExit(new Error(error))
+          : cleanExit(new Error('Invalid JA3 hash. Exiting... (Golang wrapper exception)'));
+      } else {
+        debug
+          ? cleanExit(new Error(stderr))
+          : cleanExit(new Error('Invalid JA3 hash. Exiting... (Golang wrapper exception)'));
       }
-
-      const splitRequestIdAndError = stderr.toString().split('REQUESTIDONTHELEFT');
-      const [requestId, error] = splitRequestIdAndError;
-      this.emit(requestId, { error });
     });
 
     this.server = new Server({ port });
@@ -72,49 +76,52 @@ class Golang extends EventEmitter {
   }
 }
 
-const initMyTls = (
-  port: number = 9119
+const initMyTls = async (
+  initOptions: {
+    port?: number;
+    debug?: boolean;
+  } = {}
 ): Promise<{
   (
     url: string,
-    opts: MyTlsRequestOptions,
+    options: MyTlsRequestOptions,
     method?: 'head' | 'get' | 'post' | 'put' | 'delete' | 'trace' | 'options' | 'connect' | 'patch'
   ): Promise<MyTlsResponse>;
-  head(url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  get(url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  post(url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  put(url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  delete(url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  trace(url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  options(url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  connect(url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  patch(url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  head(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  get(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  post(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  put(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  delete(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  trace(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  options(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  connect(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  patch(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
 }> => {
   return new Promise((resolveReady) => {
-    const instance = new Golang(port);
+    let { port, debug } = initOptions;
+
+    if (!port) port = 9119;
+    if (!debug) debug = false;
+
+    const instance = new Golang(port, debug);
 
     instance.on('ready', () => {
       const mytls = (() => {
         const MyTls = async (
           url: string,
-          opts: MyTlsRequestOptions,
+          options: MyTlsRequestOptions,
           method: 'head' | 'get' | 'post' | 'put' | 'delete' | 'trace' | 'options' | 'connect' | 'patch' = 'get'
         ): Promise<MyTlsResponse> => {
           return new Promise((resolveRequest, rejectRequest) => {
             const requestId = `${url}${Math.floor(Date.now() * Math.random())}`;
 
-            if (!opts.ja3) {
-              opts.ja3 =
-                '771,4865-4866-4867-49196-49195-49188-49187-49162-49161-52393-49200-49199-49192-49191-49172-49171-52392-157-156-61-60-53-47-49160-49170-10,65281-0-23-13-5-18-16-11-51-45-43-10-21,29-23-24-25,0';
-            }
-
-            if (!opts.body) {
-              opts.body = '';
-            }
+            if (!options.ja3)
+              options.ja3 = '771,255-49195-49199-49196-49200-49171-49172-156-157-47-53,0-10-11-13,23-24,0';
+            if (!options.body) options.body = '';
 
             instance.request(requestId, {
               url,
-              ...opts,
+              ...options,
               method,
             });
 
@@ -122,6 +129,8 @@ const initMyTls = (
               if (response.error) rejectRequest(response.error);
 
               const { Status: status, Body: body, Headers: headers } = response;
+
+              if (headers['Set-Cookie']) headers['Set-Cookie'] = headers['Set-Cookie'].split('/,/');
 
               resolveRequest({
                 status,
@@ -131,32 +140,32 @@ const initMyTls = (
             });
           });
         };
-        MyTls.head = (url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse> => {
-          return MyTls(url, opts, 'head');
+        MyTls.head = (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse> => {
+          return MyTls(url, options, 'head');
         };
-        MyTls.get = (url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse> => {
-          return MyTls(url, opts, 'get');
+        MyTls.get = (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse> => {
+          return MyTls(url, options, 'get');
         };
-        MyTls.post = (url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse> => {
-          return MyTls(url, opts, 'post');
+        MyTls.post = (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse> => {
+          return MyTls(url, options, 'post');
         };
-        MyTls.put = (url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse> => {
-          return MyTls(url, opts, 'put');
+        MyTls.put = (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse> => {
+          return MyTls(url, options, 'put');
         };
-        MyTls.delete = (url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse> => {
-          return MyTls(url, opts, 'delete');
+        MyTls.delete = (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse> => {
+          return MyTls(url, options, 'delete');
         };
-        MyTls.trace = (url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse> => {
-          return MyTls(url, opts, 'trace');
+        MyTls.trace = (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse> => {
+          return MyTls(url, options, 'trace');
         };
-        MyTls.options = (url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse> => {
-          return MyTls(url, opts, 'options');
+        MyTls.options = (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse> => {
+          return MyTls(url, options, 'options');
         };
-        MyTls.connect = (url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse> => {
-          return MyTls(url, opts, 'options');
+        MyTls.connect = (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse> => {
+          return MyTls(url, options, 'options');
         };
-        MyTls.patch = (url: string, opts: MyTlsRequestOptions): Promise<MyTlsResponse> => {
-          return MyTls(url, opts, 'patch');
+        MyTls.patch = (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse> => {
+          return MyTls(url, options, 'patch');
         };
 
         return MyTls;

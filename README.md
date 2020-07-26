@@ -37,7 +37,7 @@ const initMyTls = require('mytls');
 // =>     'Content-Type': 'application/json',
 // =>     Date: 'Sat, 25 Jul 2020 20:43:43 GMT',
 // =>     Server: 'nginx',
-// =>     'Set-Cookie': 'visited=6fa3244agc6xx6f9fad007b6b52af26b'
+// =>     'Set-Cookie': [ 'visited=6fa3244agc6xx6f9fad007b6b52af26b' ]
 // => }
 ```
 
@@ -52,3 +52,5 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
+
+[JA3Transport](https://github.com/cucyber/JA3Transport) & [uTls](https://github.com/refraction-networking/utls) used for the go service

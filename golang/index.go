@@ -10,8 +10,8 @@ import (
 	"encoding/json"
 	"strings"
 	"github.com/gorilla/websocket"
-	JA3Trasport "github.com/CUCyber/ja3transport"
-	// tls "github.com/refraction-networking/utls"
+	JA3 "github.com/CUCyber/ja3transport"
+	tls "github.com/refraction-networking/utls"
 )
 
 type myTLSRequest struct {
@@ -78,15 +78,21 @@ func main() {
 			return
 		}
 
-		client, err := JA3Trasport.NewWithString(string(mytlsrequest.Options.Ja3))
+		config := &tls.Config{
+			InsecureSkipVerify: true,
+		}
+
+		tr, err := JA3.NewTransportWithConfig(string(mytlsrequest.Options.Ja3), config)
 		if err != nil {
-			log.Print(mytlsrequest.RequestID + "REQUESTIDONTHELEFT" + err.Error())
+			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
 			return
 		}
 
+		client := &http.Client{Transport: tr}
+
 		req, err := http.NewRequest(strings.ToUpper(mytlsrequest.Options.Method), mytlsrequest.Options.URL, strings.NewReader(mytlsrequest.Options.Body))
 		if err != nil {
-			log.Print(err)
+			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
 			return
 		}
 
@@ -98,22 +104,26 @@ func main() {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Print(err)
+			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
 			return
 		}
 
 		defer resp.Body.Close()
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			log.Print(err)
+			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
 			return
 		}
 
 		headers := make(map[string]string)
 
 		for name, values := range resp.Header {
-			for _, value := range values {		
-				headers[name] = value
+			if name == "Set-Cookie" {
+				headers[name] = strings.Join(values, "/,/")
+			} else {
+				for _, value := range values {		
+					headers[name] = value
+				}
 			}
 		}
 
@@ -123,13 +133,13 @@ func main() {
 
 		data, err := json.Marshal(reply)
 		if err != nil {
-			log.Print(err)
+			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
 			return
 		}
 		
 		err = c.WriteMessage(websocket.TextMessage, data)
 		if err != nil {
-			log.Print(err)
+			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
 			return
 		}
 	}
