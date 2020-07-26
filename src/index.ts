@@ -66,7 +66,7 @@ class Golang extends EventEmitter {
           ? cleanExit(new Error(stderr))
           : cleanExit(new Error('Invalid JA3 hash. Exiting... (Golang wrapper exception)'));
       }
-    })
+    });
 
     this.server.on('connection', (ws) => {
       this.emit('ready');
@@ -78,7 +78,7 @@ class Golang extends EventEmitter {
     });
   }
 
-  request (
+  request(
     requestId: string,
     options: {
       [key: string]: any;
@@ -99,15 +99,15 @@ const initMyTls = async (
     options: MyTlsRequestOptions,
     method?: 'head' | 'get' | 'post' | 'put' | 'delete' | 'trace' | 'options' | 'connect' | 'patch'
   ): Promise<MyTlsResponse>;
-  head (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  get (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  post (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  put (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  delete (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  trace (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  options (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  connect (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  patch (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  head(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  get(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  post(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  put(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  delete(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  trace(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  options(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  connect(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
+  patch(url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
 }> => {
   return new Promise((resolveReady) => {
     let { port, debug } = initOptions;
