@@ -101,7 +101,7 @@ const initMyTls = async (
   ): Promise<MyTlsResponse>;
   head (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
   get (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
-  post (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>
+  post (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
   put (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
   delete (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
   trace (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse>;
@@ -151,7 +151,7 @@ const initMyTls = async (
               });
             });
           });
-        }
+        };
         MyTls.head = (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse> => {
           return MyTls(url, options, 'head');
         };
@@ -171,7 +171,7 @@ const initMyTls = async (
           return MyTls(url, options, 'trace');
         };
         MyTls.options = (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse> => {
-          reurn MyTls(url, options, 'options');
+          return MyTls(url, options, 'options');
         };
         MyTls.connect = (url: string, options: MyTlsRequestOptions): Promise<MyTlsResponse> => {
           return MyTls(url, options, 'options');
@@ -181,7 +181,7 @@ const initMyTls = async (
         };
 
         return MyTls;
-      })()
+      })();
       resolveReady(mytls);
     });
   });
