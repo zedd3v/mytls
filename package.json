@@ -1,5 +1,5 @@
 {
-  "name": "@incizzle/mytls",
+  "name": "mytls",
   "version": "1.0.4",
   "description": "Mimic TLS/JA3 fingerprint inside Node with help from Go",
   "main": "dist/index.js",
