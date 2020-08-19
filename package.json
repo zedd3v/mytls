@@ -8,8 +8,8 @@
   "scripts": {
     "build": "tsc",
     "build:windows": "cross-env GOOS=windows go build -o ./dist ./golang/index.go",
-    "build:linux": "cross-env GOOS=linux go build -o ./dist ./golang/index.go && chmod 777 ./dist/index",
-    "build:mac": "cross-env GOOS=darwin go build -o ./dist/index-mac ./golang/index.go && chmod 777 ./dist/index-mac",
+    "build:linux": "cross-env GOOS=linux go build -o ./dist ./golang/index.go && chmod +x ./dist/index",
+    "build:mac": "cross-env GOOS=darwin go build -o ./dist/index-mac ./golang/index.go && chmod +x ./dist/index-mac",
     "prepare": "npm run build && npm run build:windows && npm run build:linux && npm run build:mac"
   },
   "repository": {
