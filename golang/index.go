@@ -91,9 +91,8 @@ func main() {
 
 		// edits.starts
 		rawProxy := mytlsrequest.Options.Proxy
-		if rawProxy != "" { 
+		if rawProxy != "" {
 			proxyUrl, _ := url.Parse(rawProxy)
-		// log.Print(err)
 			proxy := http.ProxyURL(proxyUrl)
 			tr.Proxy = proxy
 		}
@@ -132,7 +131,7 @@ func main() {
 			if name == "Set-Cookie" {
 				headers[name] = strings.Join(values, "/,/")
 			} else {
-				for _, value := range values {		
+				for _, value := range values {
 					headers[name] = value
 				}
 			}
@@ -147,7 +146,7 @@ func main() {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
 			return
 		}
-		
+
 		err = c.WriteMessage(websocket.TextMessage, data)
 		if err != nil {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
