@@ -89,14 +89,14 @@ func main() {
 			return
 		}
 
-		// edits.starts
+		
 		rawProxy := mytlsrequest.Options.Proxy
 		if rawProxy != "" {
 			proxyUrl, _ := url.Parse(rawProxy)
 			proxy := http.ProxyURL(proxyUrl)
 			tr.Proxy = proxy
 		}
-		// edits.ends
+		
 
 		client := &http.Client{Transport: tr}
 
