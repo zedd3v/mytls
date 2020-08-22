@@ -22,6 +22,7 @@ type myTLSRequest struct {
 		Headers map[string]string `json:"headers"`
 		Body string `json:"body"`
 		Ja3 string `json:"ja3"`
+		Proxy string  `json:"proxy"`
 	} `json:"options"`
 }
 
@@ -87,6 +88,17 @@ func main() {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
 			return
 		}
+
+		// edits.starts
+		rawProxy := mytlsrequest.Options.Proxy
+		if rawProxy != "" { 
+			proxyUrl, _ := url.Parse(rawProxy)
+		log.Print(rawProxy)
+		// log.Print(err)
+			proxy := http.ProxyURL(proxyUrl)
+			tr.Proxy = proxy
+		}
+		// edits.ends
 
 		client := &http.Client{Transport: tr}
 
