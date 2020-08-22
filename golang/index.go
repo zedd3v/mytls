@@ -93,7 +93,6 @@ func main() {
 		rawProxy := mytlsrequest.Options.Proxy
 		if rawProxy != "" { 
 			proxyUrl, _ := url.Parse(rawProxy)
-		log.Print(rawProxy)
 		// log.Print(err)
 			proxy := http.ProxyURL(proxyUrl)
 			tr.Proxy = proxy
