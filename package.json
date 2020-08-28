@@ -7,9 +7,9 @@
   "author": "zeddev",
   "scripts": {
     "build": "tsc",
-    "build:windows": "cross-env GOOS=windows go build -o ./dist ./golang/*.go",
-    "build:linux": "cross-env GOOS=linux go build -o ./dist ./golang/*.go && chmod +x ./dist/index",
-    "build:mac": "cross-env GOOS=darwin go build -o ./dist/index-mac ./golang/*.go && chmod +x ./dist/index-mac",
+    "build:windows": "cross-env GOOS=windows go build -o ./dist/index.exe ./golang",
+    "build:linux": "cross-env GOOS=linux go build -o ./dist/index ./golang && chmod +x ./dist/index",
+    "build:mac": "cross-env GOOS=darwin go build -o ./dist/index-mac ./golang && chmod +x ./dist/index-mac",
     "prepare": "npm run build && npm run build:windows && npm run build:linux && npm run build:mac"
   },
   "repository": {
