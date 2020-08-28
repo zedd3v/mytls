@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"strings"
 	"github.com/gorilla/websocket"
-	JA3 "github.com/CUCyber/ja3transport"
+//	JA3 "github.com/CUCyber/ja3transport"
 	tls "github.com/refraction-networking/utls"
 )
 
@@ -34,7 +34,7 @@ type response struct {
 
 type myTLSResponse struct {
 	RequestID string
-	Response response 
+	Response response
 }
 
 func getWebsocketAddr() (string) {
@@ -69,41 +69,56 @@ func main() {
 		_, message, err := c.ReadMessage()
 		if err != nil {
 			log.Print(err)
-			return
+			continue
 		}
 
 		mytlsrequest := new(myTLSRequest)
 		e := json.Unmarshal(message, &mytlsrequest)
 		if e != nil {
 			log.Print(err)
-			return
+			continue
 		}
 
 		config := &tls.Config{
 			InsecureSkipVerify: true,
 		}
 
-		tr, err := JA3.NewTransportWithConfig(string(mytlsrequest.Options.Ja3), config)
-		if err != nil {
-			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
-			return
-		}
+		var transport http.RoundTripper
 
-		
+
+
 		rawProxy := mytlsrequest.Options.Proxy
 		if rawProxy != "" {
 			proxyUrl, _ := url.Parse(rawProxy)
-			proxy := http.ProxyURL(proxyUrl)
-			tr.Proxy = proxy
-		}
-		
+			proxy, err := FromURL(proxyUrl, Direct)
+			if err != nil {
+				log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+				continue
+			}
 
-		client := &http.Client{Transport: tr}
+			tr, err := NewTransportWithDialer(string(mytlsrequest.Options.Ja3), config, proxy)
+			if err != nil {
+				log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+				continue
+			}
+			transport = tr
+
+		} else {
+			tr, err := NewTransportWithConfig(string(mytlsrequest.Options.Ja3), config)
+			if err != nil {
+				log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+				continue
+			}
+			transport = tr
+		}
+
+
+		client := &http.Client{Transport: transport}
 
 		req, err := http.NewRequest(strings.ToUpper(mytlsrequest.Options.Method), mytlsrequest.Options.URL, strings.NewReader(mytlsrequest.Options.Body))
 		if err != nil {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
-			return
+			continue
 		}
 
 		for k, v := range mytlsrequest.Options.Headers {
@@ -115,14 +130,14 @@ func main() {
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
-			return
+			continue
 		}
 
 		defer resp.Body.Close()
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
-			return
+			continue
 		}
 
 		headers := make(map[string]string)
@@ -144,13 +159,13 @@ func main() {
 		data, err := json.Marshal(reply)
 		if err != nil {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
-			return
+			continue
 		}
 
 		err = c.WriteMessage(websocket.TextMessage, data)
 		if err != nil {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
-			return
+			continue
 		}
 	}
 }
