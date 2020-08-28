@@ -7,9 +7,9 @@
   "author": "zeddev",
   "scripts": {
     "build": "tsc",
-    "build:windows": "cross-env GOOS=windows go build -o ./dist ./golang/index.go",
-    "build:linux": "cross-env GOOS=linux go build -o ./dist ./golang/index.go && chmod +x ./dist/index",
-    "build:mac": "cross-env GOOS=darwin go build -o ./dist/index-mac ./golang/index.go && chmod +x ./dist/index-mac",
+    "build:windows": "cross-env GOOS=windows go build -o ./dist ./golang/*.go",
+    "build:linux": "cross-env GOOS=linux go build -o ./dist ./golang/*.go && chmod +x ./dist/index",
+    "build:mac": "cross-env GOOS=darwin go build -o ./dist/index-mac ./golang/*.go && chmod +x ./dist/index-mac",
     "prepare": "npm run build && npm run build:windows && npm run build:linux && npm run build:mac"
   },
   "repository": {
@@ -31,6 +31,8 @@
   "homepage": "https://github.com/zedd3v/mytls#readme",
   "dependencies": {
     "ws": "^7.3.1"
+    "uuid": "^8.3.0",
+    "@types/uuid": "^8.3.0"
   },
   "devDependencies": {
     "@types/ws": "^7.2.6",
