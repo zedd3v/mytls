@@ -1,43 +1,43 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
-	"os"
+	"github.com/gorilla/websocket"
+	"io/ioutil"
+	"strings"
 	"log"
 	"net/http"
 	"net/url"
-	"io/ioutil"
-	"encoding/json"
-	"strings"
-	"github.com/gorilla/websocket"
-//	JA3 "github.com/CUCyber/ja3transport"
+	"os"
 	tls "github.com/refraction-networking/utls"
+	// JA3 "github.com/CUCyber/ja3transport"
 )
 
 type myTLSRequest struct {
 	RequestID string `json:"requestId"`
-	Options struct {
-		URL string `json:"url"`
-		Method string `json:"method"`
+	Options   struct {
+		URL     string            `json:"url"`
+		Method  string            `json:"method"`
 		Headers map[string]string `json:"headers"`
-		Body string `json:"body"`
-		Ja3 string `json:"ja3"`
-		Proxy string  `json:"proxy"`
+		Body    string            `json:"body"`
+		Ja3     string            `json:"ja3"`
+		Proxy   string            `json:"proxy"`
 	} `json:"options"`
 }
 
 type response struct {
-	Status int
-	Body string
+	Status  int
+	Body    string
 	Headers map[string]string
 }
 
 type myTLSResponse struct {
 	RequestID string
-	Response response
+	Response  response
 }
 
-func getWebsocketAddr() (string) {
+func getWebsocketAddr() string {
 	port, exists := os.LookupEnv("WS_PORT")
 
 	var addr *string
@@ -85,12 +85,10 @@ func main() {
 
 		var transport http.RoundTripper
 
-
-
 		rawProxy := mytlsrequest.Options.Proxy
 		if rawProxy != "" {
-			proxyUrl, _ := url.Parse(rawProxy)
-			proxy, err := FromURL(proxyUrl, Direct)
+			proxyURL, _ := url.Parse(rawProxy)
+			proxy, err := FromURL(proxyURL, Direct)
 			if err != nil {
 				log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
 				continue
@@ -111,7 +109,6 @@ func main() {
 			}
 			transport = tr
 		}
-
 
 		client := &http.Client{Transport: transport}
 

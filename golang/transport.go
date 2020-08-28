@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-
 	tls "github.com/refraction-networking/utls"
 )
 
@@ -24,16 +23,9 @@ func (e ErrExtensionNotExist) Error() string {
 	return fmt.Sprintf("Extension does not exist: %s\n", e)
 }
 
-
-
-
 type Dialer interface {
 	Dial(network, addr string) (net.Conn, error)
 }
-
-
-
-
 
 // extMap maps extension values to the TLSExtension object associated with the
 // number. Some values are not put in here because they must be applied in a
@@ -203,12 +195,7 @@ func urlToHost(target *url.URL) *url.URL {
 	return target
 }
 
-
-
-
-
-
-// NewTransportWithConfig creates an http.Transport object given a utls.Config
+// NewTransportWithConfig - creates an http.Transport object given a utls.Config
 func NewTransportWithDialer(ja3 string, config *tls.Config, dialer Dialer) (*http.Transport, error) {
 
 	dialtls := func(network, addr string) (net.Conn, error) {
@@ -235,5 +222,3 @@ func NewTransportWithDialer(ja3 string, config *tls.Config, dialer Dialer) (*htt
 
 	return &http.Transport{DialTLS: dialtls, Dial: dialer.Dial}, nil
 }
-
-
