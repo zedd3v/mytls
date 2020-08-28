@@ -1,15 +1,15 @@
 {
   "name": "mytls",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Mimic TLS/JA3 fingerprint inside Node with help from Go",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "zeddev",
   "scripts": {
     "build": "tsc",
-    "build:windows": "cross-env GOOS=windows go build -o ./dist ./golang/index.go",
-    "build:linux": "cross-env GOOS=linux go build -o ./dist ./golang/index.go && chmod +x ./dist/index",
-    "build:mac": "cross-env GOOS=darwin go build -o ./dist/index-mac ./golang/index.go && chmod +x ./dist/index-mac",
+    "build:windows": "cross-env GOOS=windows go build -o ./dist ./golang/*.go",
+    "build:linux": "cross-env GOOS=linux go build -o ./dist ./golang/*.go && chmod +x ./dist/index",
+    "build:mac": "cross-env GOOS=darwin go build -o ./dist/index-mac ./golang/*.go && chmod +x ./dist/index-mac",
     "prepare": "npm run build && npm run build:windows && npm run build:linux && npm run build:mac"
   },
   "repository": {

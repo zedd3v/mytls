@@ -1,42 +1,43 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
-	"os"
+	"github.com/gorilla/websocket"
+	"io/ioutil"
+	"strings"
 	"log"
 	"net/http"
 	"net/url"
-	"io/ioutil"
-	"encoding/json"
-	"strings"
-	"github.com/gorilla/websocket"
-	JA3 "github.com/CUCyber/ja3transport"
+	"os"
 	tls "github.com/refraction-networking/utls"
+	// JA3 "github.com/CUCyber/ja3transport"
 )
 
 type myTLSRequest struct {
 	RequestID string `json:"requestId"`
-	Options struct {
-		URL string `json:"url"`
-		Method string `json:"method"`
+	Options   struct {
+		URL     string            `json:"url"`
+		Method  string            `json:"method"`
 		Headers map[string]string `json:"headers"`
-		Body string `json:"body"`
-		Ja3 string `json:"ja3"`
+		Body    string            `json:"body"`
+		Ja3     string            `json:"ja3"`
+		Proxy   string            `json:"proxy"`
 	} `json:"options"`
 }
 
 type response struct {
-	Status int
-	Body string
+	Status  int
+	Body    string
 	Headers map[string]string
 }
 
 type myTLSResponse struct {
 	RequestID string
-	Response response 
+	Response  response
 }
 
-func getWebsocketAddr() (string) {
+func getWebsocketAddr() string {
 	port, exists := os.LookupEnv("WS_PORT")
 
 	var addr *string
@@ -68,32 +69,53 @@ func main() {
 		_, message, err := c.ReadMessage()
 		if err != nil {
 			log.Print(err)
-			return
+			continue
 		}
 
 		mytlsrequest := new(myTLSRequest)
 		e := json.Unmarshal(message, &mytlsrequest)
 		if e != nil {
 			log.Print(err)
-			return
+			continue
 		}
 
 		config := &tls.Config{
 			InsecureSkipVerify: true,
 		}
 
-		tr, err := JA3.NewTransportWithConfig(string(mytlsrequest.Options.Ja3), config)
-		if err != nil {
-			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
-			return
+		var transport http.RoundTripper
+
+		rawProxy := mytlsrequest.Options.Proxy
+		if rawProxy != "" {
+			proxyURL, _ := url.Parse(rawProxy)
+			proxy, err := FromURL(proxyURL, Direct)
+			if err != nil {
+				log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+				continue
+			}
+
+			tr, err := NewTransportWithDialer(string(mytlsrequest.Options.Ja3), config, proxy)
+			if err != nil {
+				log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+				continue
+			}
+			transport = tr
+
+		} else {
+			tr, err := NewTransportWithConfig(string(mytlsrequest.Options.Ja3), config)
+			if err != nil {
+				log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+				continue
+			}
+			transport = tr
 		}
 
-		client := &http.Client{Transport: tr}
+		client := &http.Client{Transport: transport}
 
 		req, err := http.NewRequest(strings.ToUpper(mytlsrequest.Options.Method), mytlsrequest.Options.URL, strings.NewReader(mytlsrequest.Options.Body))
 		if err != nil {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
-			return
+			continue
 		}
 
 		for k, v := range mytlsrequest.Options.Headers {
@@ -105,14 +127,14 @@ func main() {
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
-			return
+			continue
 		}
 
 		defer resp.Body.Close()
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
-			return
+			continue
 		}
 
 		headers := make(map[string]string)
@@ -121,7 +143,7 @@ func main() {
 			if name == "Set-Cookie" {
 				headers[name] = strings.Join(values, "/,/")
 			} else {
-				for _, value := range values {		
+				for _, value := range values {
 					headers[name] = value
 				}
 			}
@@ -134,13 +156,13 @@ func main() {
 		data, err := json.Marshal(reply)
 		if err != nil {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
-			return
+			continue
 		}
-		
+
 		err = c.WriteMessage(websocket.TextMessage, data)
 		if err != nil {
 			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
-			return
+			continue
 		}
 	}
 }

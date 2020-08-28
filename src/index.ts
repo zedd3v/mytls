@@ -2,13 +2,13 @@ import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
 import path from 'path';
 import { EventEmitter } from 'events';
 import { Server } from 'ws';
-
 export interface MyTlsRequestOptions {
   headers?: {
     [key: string]: any;
   };
   body?: string;
   ja3?: string;
+  proxy?: string;
 }
 
 export interface MyTlsResponse {
@@ -58,9 +58,7 @@ class Golang extends EventEmitter {
       if (stderr.toString().includes('Request_Id_On_The_Left')) {
         const splitRequestIdAndError = stderr.toString().split('Request_Id_On_The_Left');
         const [requestId, error] = splitRequestIdAndError;
-        debug
-          ? cleanExit(new Error(error))
-          : cleanExit(new Error('Invalid JA3 hash. Exiting... (Golang wrapper exception)'));
+        this.emit(requestId, { error: new Error(error) });
       } else {
         debug
           ? cleanExit(new Error(stderr))
@@ -122,14 +120,25 @@ const initMyTls = async (
         const MyTls = async (
           url: string,
           options: MyTlsRequestOptions,
-          method: 'head' | 'get' | 'post' | 'put' | 'delete' | 'trace' | 'options' | 'connect' | 'patch' = 'get'
+          method:
+            | 'head'
+            | 'get'
+            | 'post'
+            | 'put'
+            | 'delete'
+            | 'trace'
+            | 'options'
+            | 'connect'
+            | 'patch' = 'get'
         ): Promise<MyTlsResponse> => {
           return new Promise((resolveRequest, rejectRequest) => {
             const requestId = `${url}${Math.floor(Date.now() * Math.random())}`;
 
             if (!options.ja3)
-              options.ja3 = '771,255-49195-49199-49196-49200-49171-49172-156-157-47-53,0-10-11-13,23-24,0';
+              options.ja3 =
+                '771,255-49195-49199-49196-49200-49171-49172-156-157-47-53,0-10-11-13,23-24,0';
             if (!options.body) options.body = '';
+            if (!options.proxy) options.proxy = '';
 
             instance.request(requestId, {
               url,
@@ -138,7 +147,7 @@ const initMyTls = async (
             });
 
             instance.once(requestId, (response) => {
-              if (response.error) rejectRequest(response.error);
+              if (response.error) return rejectRequest(response.error);
 
               const { Status: status, Body: body, Headers: headers } = response;
 
