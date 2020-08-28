@@ -24,6 +24,7 @@ const initMyTls = require('mytls');
       'user-agent': 'customheaders',
     },
     ja3: '771,255-49195-49199-49196-49200-49171-49172-156-157-47-53,0-10-11-13,23-24,0',
+    proxy: 'http://user@pass:ip:port'
   });
 })();
 
