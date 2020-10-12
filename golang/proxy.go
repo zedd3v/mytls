@@ -113,14 +113,6 @@ func FromURL(u *url.URL, forward proxy.Dialer) (proxy.Dialer, error) {
 	return proxy.FromURL(u, forward)
 }
 
-func FromURLnil(u *url.URL) (proxy.Dialer, error) {
-	return proxy.FromURL(u, proxy.Direct)
-}
-
-func FromEnvironment() proxy.Dialer {
-	return proxy.FromEnvironment()
-}
-
 func init() {
 	proxy.RegisterDialerType("http", newHTTPProxy)
 	proxy.RegisterDialerType("https", newHTTPProxy)
