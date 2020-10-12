@@ -14,7 +14,7 @@ import (
 	// JA3 "github.com/CUCyber/ja3transport"
 )
 
-type myTLSRequest struct {
+type MyTlsRequest struct {
 	RequestID string `json:"requestId"`
 	Options   struct {
 		URL     string            `json:"url"`
@@ -26,15 +26,15 @@ type myTLSRequest struct {
 	} `json:"options"`
 }
 
-type response struct {
+type RequestResponse struct {
 	Status  int
 	Body    string
 	Headers map[string]string
 }
 
-type myTLSResponse struct {
+type MyTlsResponse struct {
 	RequestID string
-	Response  response
+	Response  RequestResponse
 }
 
 func getWebsocketAddr() string {
@@ -65,17 +65,18 @@ func main() {
 		return
 	}
 
+	// TODO: move all definitions out of infinite loop, memory leak
 	for {
 		_, message, err := c.ReadMessage()
 		if err != nil {
-			log.Print(err)
+			log.Println("error reading ws message:", err)
 			continue
 		}
 
-		mytlsrequest := new(myTLSRequest)
-		e := json.Unmarshal(message, &mytlsrequest)
+		tlsRequest := new(MyTlsRequest)
+		e := json.Unmarshal(message, &tlsRequest)
 		if e != nil {
-			log.Print(err)
+			log.Println("error unmarshalling request json:", err)
 			continue
 		}
 
@@ -85,26 +86,26 @@ func main() {
 
 		var transport http.RoundTripper
 
-		rawProxy := mytlsrequest.Options.Proxy
+		rawProxy := tlsRequest.Options.Proxy
 		if rawProxy != "" {
 			proxyURL, _ := url.Parse(rawProxy)
 			proxy, err := FromURL(proxyURL, Direct)
 			if err != nil {
-				log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+				log.Printf("[%s] error parsing proxy url: %s\n", tlsRequest.RequestID, err)
 				continue
 			}
 
-			tr, err := NewTransportWithDialer(string(mytlsrequest.Options.Ja3), config, proxy)
+			tr, err := NewTransportWithDialer(tlsRequest.Options.Ja3, config, proxy)
 			if err != nil {
-				log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+				log.Printf("[%s] error creating transport: %s\n", tlsRequest.RequestID, err)
 				continue
 			}
 			transport = tr
 
 		} else {
-			tr, err := NewTransportWithConfig(string(mytlsrequest.Options.Ja3), config)
+			tr, err := NewTransportWithConfig(tlsRequest.Options.Ja3, config)
 			if err != nil {
-				log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+				log.Printf("[%s] error creating transport: %s\n", tlsRequest.RequestID, err)
 				continue
 			}
 			transport = tr
@@ -112,13 +113,16 @@ func main() {
 
 		client := &http.Client{Transport: transport}
 
-		req, err := http.NewRequest(strings.ToUpper(mytlsrequest.Options.Method), mytlsrequest.Options.URL, strings.NewReader(mytlsrequest.Options.Body))
+		req, err := http.NewRequest(strings.ToUpper(tlsRequest.Options.Method), tlsRequest.Options.URL, strings.NewReader(tlsRequest.Options.Body))
 		if err != nil {
-			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+			log.Printf("[%s] error creating request: %s\n", tlsRequest.RequestID, err)
 			continue
 		}
 
-		for k, v := range mytlsrequest.Options.Headers {
+		for k, v := range tlsRequest.Options.Headers {
+			// TODO: reconsider this check for 2 reasons,
+			// 1st we should trust that the correct host header is provided if it is provided at all
+			// and 2nd it doesn't even work if they name the header with any capital letters
 			if k != "host" {
 				req.Header.Set(k, v)
 			}
@@ -126,42 +130,41 @@ func main() {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+			log.Printf("[%s] error performing request: %s\n", tlsRequest.RequestID, err)
 			continue
 		}
 
-		defer resp.Body.Close()
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
 		if err != nil {
-			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+			log.Printf("[%s] error reading response body: %s\n", tlsRequest.RequestID, err)
 			continue
 		}
 
 		headers := make(map[string]string)
 
+		// TODO: better header handling. there are blatant issues with this method of handling headers.
 		for name, values := range resp.Header {
 			if name == "Set-Cookie" {
 				headers[name] = strings.Join(values, "/,/")
 			} else {
-				for _, value := range values {
-					headers[name] = value
-				}
+				headers[name] = values[len(values)-1]
 			}
 		}
 
-		Response := response{resp.StatusCode, string(bodyBytes), headers}
+		Response := RequestResponse{resp.StatusCode, string(bodyBytes), headers}
 
-		reply := myTLSResponse{mytlsrequest.RequestID, Response}
+		reply := MyTlsResponse{tlsRequest.RequestID, Response}
 
 		data, err := json.Marshal(reply)
 		if err != nil {
-			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+			log.Printf("[%s] error marshalling reply json: %s\n", tlsRequest.RequestID, err)
 			continue
 		}
 
 		err = c.WriteMessage(websocket.TextMessage, data)
 		if err != nil {
-			log.Print(mytlsrequest.RequestID + "Request_Id_On_The_Left" + err.Error())
+			log.Printf("[%s] error writing message to ws: %s\n", tlsRequest.RequestID, err)
 			continue
 		}
 	}

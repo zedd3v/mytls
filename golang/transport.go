@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
+	tls "github.com/refraction-networking/utls"
+	"golang.org/x/net/proxy"
 	"net"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
-	tls "github.com/refraction-networking/utls"
 )
 
 // greasePlaceholder is a random value (well, kindof '0x?a?a) specified in a
@@ -21,10 +22,6 @@ type ErrExtensionNotExist string
 // Error is the error value which contains the extension that does not exist
 func (e ErrExtensionNotExist) Error() string {
 	return fmt.Sprintf("Extension does not exist: %s\n", e)
-}
-
-type Dialer interface {
-	Dial(network, addr string) (net.Conn, error)
 }
 
 // extMap maps extension values to the TLSExtension object associated with the
@@ -60,26 +57,21 @@ var extMap = map[string]tls.TLSExtension{
 	"27": &tls.FakeCertCompressionAlgsExtension{},
 	"28": &tls.FakeRecordSizeLimitExtension{},
 	"35": &tls.SessionTicketExtension{},
-	"43": &tls.SupportedVersionsExtension{[]uint16{
+	"43": &tls.SupportedVersionsExtension{Versions: []uint16{
 		tls.GREASE_PLACEHOLDER,
 		tls.VersionTLS13,
 		tls.VersionTLS12,
 		tls.VersionTLS11,
 		tls.VersionTLS10}},
 	"44": &tls.CookieExtension{},
-	"45": &tls.PSKKeyExchangeModesExtension{[]uint8{
+	"45": &tls.PSKKeyExchangeModesExtension{Modes: []uint8{
 		tls.PskModeDHE,
 	}},
-	"51":    &tls.KeyShareExtension{[]tls.KeyShare{}},
+	"51":    &tls.KeyShareExtension{KeyShares: []tls.KeyShare{}},
 	"13172": &tls.NPNExtension{},
 	"65281": &tls.RenegotiationInfoExtension{
 		Renegotiation: tls.RenegotiateOnceAsClient,
 	},
-}
-
-// NewTransport creates an http.Transport which mocks the given JA3 signature when HTTPS is used
-func NewTransport(ja3 string) (*http.Transport, error) {
-	return NewTransportWithConfig(ja3, &tls.Config{})
 }
 
 // NewTransportWithConfig creates an http.Transport object given a utls.Config
@@ -89,7 +81,7 @@ func NewTransportWithConfig(ja3 string, config *tls.Config) (*http.Transport, er
 		return nil, err
 	}
 
-	dialtls := func(network, addr string) (net.Conn, error) {
+	dialTls := func(ctx context.Context, network, addr string) (net.Conn, error) {
 		dialConn, err := net.Dial(network, addr)
 		if err != nil {
 			return nil, err
@@ -107,7 +99,7 @@ func NewTransportWithConfig(ja3 string, config *tls.Config) (*http.Transport, er
 		return uTlsConn, nil
 	}
 
-	return &http.Transport{DialTLS: dialtls}, nil
+	return &http.Transport{DialTLSContext: dialTls}, nil
 }
 
 // stringToSpec creates a ClientHelloSpec based on a JA3 string
@@ -135,7 +127,7 @@ func stringToSpec(ja3 string) (*tls.ClientHelloSpec, error) {
 		}
 		targetCurves = append(targetCurves, tls.CurveID(cid))
 	}
-	extMap["10"] = &tls.SupportedCurvesExtension{targetCurves}
+	extMap["10"] = &tls.SupportedCurvesExtension{Curves: targetCurves}
 
 	// parse point formats
 	var targetPointFormats []byte
@@ -184,21 +176,14 @@ func stringToSpec(ja3 string) (*tls.ClientHelloSpec, error) {
 	}, nil
 }
 
-func urlToHost(target *url.URL) *url.URL {
-	if !strings.Contains(target.Host, ":") {
-		if target.Scheme == "http" {
-			target.Host = target.Host + ":80"
-		} else if target.Scheme == "https" {
-			target.Host = target.Host + ":443"
-		}
-	}
-	return target
-}
-
 // NewTransportWithConfig - creates an http.Transport object given a utls.Config
-func NewTransportWithDialer(ja3 string, config *tls.Config, dialer Dialer) (*http.Transport, error) {
+func NewTransportWithDialer(ja3 string, config *tls.Config, dialer proxy.Dialer) (*http.Transport, error) {
 
-	dialtls := func(network, addr string) (net.Conn, error) {
+	dial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		return dialer.Dial(network, addr)
+	}
+
+	dialTls := func(ctx context.Context, network, addr string) (net.Conn, error) {
 		dialConn, err := dialer.Dial(network, addr)
 		if err != nil {
 			return nil, err
@@ -220,5 +205,5 @@ func NewTransportWithDialer(ja3 string, config *tls.Config, dialer Dialer) (*htt
 		return uTlsConn, nil
 	}
 
-	return &http.Transport{DialTLS: dialtls, Dial: dialer.Dial}, nil
+	return &http.Transport{DialTLSContext: dialTls, DialContext: dial}, nil
 }
